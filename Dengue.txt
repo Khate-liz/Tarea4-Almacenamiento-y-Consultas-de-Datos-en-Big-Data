@@ -1,0 +1,111 @@
+import happybase
+import pandas as pd
+from datetime import datetime
+from pymongo import MongoClient
+from pprint import pprint  # Para imprimir resultados de forma legible
+
+# 1. Inserción de un nuevo documento 
+nuevo_dato = {
+    "id": 1001,
+    "codigo_evento": 210,
+    "a_o_reporte": 2018,  
+    "mes_reporte": "ENERO",
+    "semana_epidemiologica": 1,
+    "edad": 13,
+    "uni_med": "AÑOS",
+    "nacionalidad": "COLOMBIA",
+    "sexo": "FEMENINO",
+    "regimen_de_salud": "SUBSIDIADO",
+    "pertenencia_etnica": "SIN PERTENENCIA ÉTNICA",
+    "nom_upgd": "CLINICA MEDISALUD SA",
+    "nombre_del_evento": "DENGUE",
+    "pais_reporte": "COLOMBIA",
+    "departamento_reporte": "CAQUETÁ",
+    "municipio_reporte": "FLORENCIA"  
+}
+
+resultado_insert = collection.insert_one(nuevo_dato)
+print("1. Inserción confirmada:")
+print(f"ID insertado: {resultado_insert.inserted_id}")
+print("\n" + "="*50 + "\n")
+
+# 2. Inserción de datos de muestra adicionales
+# Creamos 9 documentos más con variaciones en edad, sexo, mes, etc.
+datos_muestra = [
+    {"id": 1, "a_o_reporte": 2018, "mes_reporte": "ENERO", "edad": 25, "sexo": "MASCULINO", "regimen_de_salud": "CONTRIBUTIVO", "departamento_reporte": "CAQUETÁ"},
+    {"id": 21, "a_o_reporte": 2018, "mes_reporte": "FEBRERO", "edad": 15, "sexo": "FEMENINO", "regimen_de_salud": "SUBSIDIADO", "departamento_reporte": "CAQUETÁ"},  
+    {"id": 5, "a_o_reporte": 2018, "mes_reporte": "MARZO", "edad": 45, "sexo": "MASCULINO", "regimen_de_salud": "SUBSIDIADO", "departamento_reporte": "CAQUETÁ"},
+    {"id": 10, "a_o_reporte": 2018, "mes_reporte": "ENERO", "edad": 8, "sexo": "FEMENINO", "regimen_de_salud": "SUBSIDIADO", "departamento_reporte": "CAQUETÁ"},
+    {"id": 30, "a_o_reporte": 2018, "mes_reporte": "FEBRERO", "sexo": "MASCULINO", "regimen_de_salud": "SUBSIDIADO", "edad": 50, "departamento_reporte": "CAQUETÁ"},
+    {"id": 40, "a_o_reporte": 2018, "mes_reporte": "ABRIL", "edad": 35, "sexo": "FEMENINO", "regimen_de_salud": "CONTRIBUTIVO", "departamento_reporte": "CAQUETÁ"},
+    {"id": 50, "a_o_reporte": 2018, "mes_reporte": "FEBRERO", "edad": 60, "sexo": "MASCULINO", "regimen_de_salud": "SUBSIDIADO", "departamento_reporte": "CAQUETÁ"},
+    {"id": 60, "a_o_reporte": 2018, "mes_reporte": "MAY0", "edad": 18, "sexo": "FEMENINO", "regimen_de_salud": "SUBSIDIADO", "departamento_reporte": "CAQUETÁ"},
+    {"id": 70, "a_o_reporte": 2018, "mes_reporte": "JUNIO", "edad": 42, "sexo": "MASCULINO", "regimen_de_salud": "PARTICULAR", "departamento_reporte": "CAQUETÁ"}
+]
+
+collection.insert_many(datos_muestra)
+print("Datos de muestra insertados (9 adicionales). Total aproximado: 10 (en real: 1000).")
+
+# 3. Seleccionar todos los documentos
+print("\n2. Todos los documentos:")
+todos = list(collection.find())
+pprint(todos)
+print("\n" + "="*50 + "\n")
+
+# 4. Pacientes de sexo masculino
+print("3. Pacientes de sexo MASCULINO:")
+masculinos = list(collection.find({"sexo": "MASCULINO"}))
+pprint(masculinos)
+print("\n" + "="*50 + "\n")
+
+# 5. Actualizar edad del ID 21 a 10
+print("4. Actualizando edad del ID 21...")
+resultado_update = collection.update_one({"id": 21}, {"$set": {"edad": 10}})
+print(f"Documentos actualizados: {resultado_update.modified_count}")
+print("\nDocumento actualizado (ID 21):")
+actualizado = collection.find_one({"id": 21})
+pprint(actualizado)
+print("\n" + "="*50 + "\n")
+
+# 6. Eliminar documento con ID 1001
+print("5. Eliminando documento ID 1001...")
+resultado_delete = collection.delete_one({"id": 1001})
+print(f"Documentos eliminados: {resultado_delete.deleted_count}")
+print("Verificación: Buscando ID 1001 (debería ser None):")
+eliminado = collection.find_one({"id": 1001})
+pprint(eliminado)
+print("\n" + "="*50 + "\n")
+
+# 7. Pacientes femeninos menores de 20 años ($lt)
+print("6. Pacientes FEMENINO con edad < 20:")
+menores_20_fem = list(collection.find({"edad": {"$lt": 20}, "sexo": "FEMENINO"}))
+pprint(menores_20_fem)
+print("\n" + "="*50 + "\n")
+
+# 8. Pacientes masculinos, régimen subsidiado, mes FEBRERO
+print("7. Pacientes MASCULINO, SUBSIDIADO, FEBRERO:")
+febrero_subs = list(collection.find({"mes_reporte": "FEBRERO", "sexo": "MASCULINO", "regimen_de_salud": "SUBSIDIADO"}))
+pprint(febrero_subs)
+print("\n" + "="*50 + "\n")
+
+# 9. Pacientes con edad >= 40 ($gte)
+print("8. Pacientes con edad >= 40:")
+mayores_40 = list(collection.find({"edad": {"$gte": 40}}))
+pprint(mayores_40)
+print("\n" + "="*50 + "\n")
+
+# 10. Agregación: Contar total de pacientes
+print("9. Conteo total de pacientes:")
+total = list(collection.aggregate([{"$count": "Total_Pacientes"}]))
+pprint(total)  # En muestra: 9 (después de delete); en real: 1000
+print("\n" + "="*50 + "\n")
+
+# 11. Agregación: Promedio de edad
+print("10. Promedio de edad de pacientes:")
+promedio = list(collection.aggregate([{"$group": {"_id": None, "Promedio_edad_Pacientes": {"$avg": "$edad"}}}]))
+pprint(promedio)
+print("\n" + "="*50 + "\n")
+
+# Cierre de conexión
+client.close()
+print
